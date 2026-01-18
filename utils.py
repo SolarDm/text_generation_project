@@ -75,8 +75,9 @@ def count_score(
         test,
         ppl_scale: float = 4.0,
         best_overlap_train_percent: float = 0.3,
-        test_overlap_min: float = 0.18,
-        test_overlap_max: float = 0.22,
+        overlap_train_width: float = 5,    # +- (1 / width)
+        test_overlap_min: float = 0.2,
+        test_overlap_max: float = 0.4,
         generalization_bonus: float = 1.2
 ):
     perplexity = calculate_perplexity(model, tokens)
@@ -89,12 +90,7 @@ def count_score(
 
     quality = math.exp(-perplexity / ppl_scale)
 
-    if avg_train < best_overlap_train_percent:
-        overlap_den = (best_overlap_train_percent - avg_train) * 20
-    else:
-        overlap_den = (avg_train - best_overlap_train_percent) * 5
-
-    creativity = min(1.0 / overlap_den, 1.0)
+    creativity = min(1.0 / (abs(best_overlap_train_percent - avg_train) * overlap_train_width), 1.0)
 
     if avg_test < test_overlap_min:
         generalization = avg_test / test_overlap_min

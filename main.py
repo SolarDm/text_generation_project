@@ -20,22 +20,22 @@ def main():
     orders = [1, 2, 3, 4, 5, 6, 7]
 
     for n in orders:
-        for sm in ['interpolation']:
+        for sm in ['interpolation', 'k-add']:
             print(f"\nОбучение {n}-граммной модели со сглаживаеим {sm}...")
             model = MarkovChain(n=n, smoothing=sm, alpha=0.01, kernel=exponential_kernel)
             model.train(tokens)
 
             # print(f'Качество модели: {calculate_perplexity(model, tokens)}')
 
-            text = model.generate(max_length=500, seed=12)
+            text = model.generate(max_length=500)
 
             print(f"Сгенерированный текст (n={n}):")
             text = [int(i) for i in text]
             gen = bpe.decode(text)
             print(gen)
 
-            print(f'Схожесть с тестовым тектом: {(calculate_overlap(bpe.decode(text).split(), test_tokens, 2) + calculate_overlap(bpe.decode(text).split(), test_tokens, 3)) / 2}')
-            print(f'Схожесть с тектом: {(calculate_overlap(bpe.decode(text).split(), train_tokens, 2) + calculate_overlap(bpe.decode(text).split(), train_tokens, 3)) / 2}')
+            # print(f'Схожесть с тестовым тектом: {(calculate_overlap(bpe.decode(text).split(), test_tokens, 2) + calculate_overlap(bpe.decode(text).split(), test_tokens, 3)) / 2}')
+            # print(f'Схожесть с тектом: {(calculate_overlap(bpe.decode(text).split(), train_tokens, 2) + calculate_overlap(bpe.decode(text).split(), train_tokens, 3)) / 2}')
             print(f'Score: {count_score(model, tokens, gen.split(), train_tokens, test_tokens)}')
 
             print()
