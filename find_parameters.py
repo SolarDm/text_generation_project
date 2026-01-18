@@ -31,7 +31,7 @@ def objective(trial):
     print('=' * 60)
 
     n = trial.suggest_int("n", 1, 7)
-    num_merges = trial.suggest_int("num_merges", 0, 100)
+    num_merges = trial.suggest_int("num_merges", 1, 100)
     print(f"num merges = {num_merges}")
     smoothing = trial.suggest_categorical("smoothing", ["none", "add-k", "interpolation"])
     alpha = 0.0
@@ -55,7 +55,6 @@ def objective(trial):
     gen_tokens = model.generate(max_length=500)
     text_int = [int(i) for i in gen_tokens]
     gen = bpe.decode(text_int)
-
     score = count_score(model, test_tokens_enc, gen.split(), train_tokens, test_tokens)
 
     sample = gen[:50] + "..." if len(gen) > 50 else gen
