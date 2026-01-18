@@ -1,10 +1,13 @@
 import re
 from typing import List
-import numpy as np
+from markov_chain import MarkovChain
+import math
+
 
 def load_corpus(filepath: str) -> str:
     with open(filepath, 'r', encoding='utf-8') as f:
         return f.read()
+
 
 def preprocess_text(text: str, lower_case: bool = True) -> List[str]:
     if lower_case:
@@ -12,40 +15,67 @@ def preprocess_text(text: str, lower_case: bool = True) -> List[str]:
 
     text = re.sub(r'([.!?,;:])', r' \1 ', text)
     text = re.sub(r'-{2,}', ' ', text)
-    text = re.sub(r'[iuv*\\()0123456789;?!":<>sh-]', ' ', text)
+    text = re.sub(r'[iusv*\\()0123456789;?!":<>,h-]', ' ', text)
     text = text.replace('ё', 'е')
     text = text.replace('ъ', 'ь')
     tokens = text.split()
     
     return tokens
 
+
 def split_train_test(tokens: List[str], test_size: float = 0.1) -> tuple:
     split_idx = int(len(tokens) * (1 - test_size))
     return tokens[:split_idx], tokens[split_idx:]
 
-def calculate_perplexity(model, test_tokens: List[str]) -> float:
-    log_prob_sum = 0
-    total_transitions = 0
 
-    for i in range(len(test_tokens) - model.n + 1):
-        prefix = tuple(test_tokens[i:i + model.n - 1])
-        next_word = test_tokens[i + model.n - 1]
+def calculate_perplexity(model: MarkovChain, test_tokens: List[str]) -> float:
+    total_log_prob = 0.0
+    N = len(test_tokens) - model.n
 
-        if prefix in model.model:
-            counter = model.model[prefix]
-            total = sum(counter.values())
-            
-            if model.smoothing == 'none':
-                prob = counter[next_word] / total if total > 0 else 0
-            else:
-                prob = np.exp(counter.get(next_word, np.log(model.alpha / (total + model.alpha * len(model.vocab)))))
-            
-            if prob > 0:
-                log_prob_sum += np.log(prob)
-                total_transitions += 1
-
-    if total_transitions == 0:
+    if N <= 0:
         return float('inf')
-    
-    avg_log_prob = log_prob_sum / total_transitions
-    return np.exp(-avg_log_prob)
+
+    for i in range(len(test_tokens) - model.n):
+        context = tuple(test_tokens[i:i + model.n])
+        next_token = test_tokens[i + model.n]
+        prob = model.get_probability(context, next_token)
+
+        total_log_prob += math.log2(prob if prob > 0 else 1e-10)
+
+    avg_log_prob = total_log_prob / N
+    perplexity = 2 ** (-avg_log_prob)
+    return perplexity
+
+
+def calculate_self_overlap(generated_tokens: List[str], train_tokens: List[str], ngram_size: int = 5) -> float:
+    train_ngrams = set()
+    for i in range(len(train_tokens) - ngram_size + 1):
+        train_ngrams.add(tuple(train_tokens[i:i + ngram_size]))
+
+    generated_ngrams = []
+    for i in range(len(generated_tokens) - ngram_size + 1):
+        generated_ngrams.append(tuple(generated_tokens[i:i + ngram_size]))
+
+    if not generated_ngrams:
+        return 0.0
+
+    overlap_count = 0
+    for ngram in generated_ngrams:
+        if ngram in train_ngrams:
+            overlap_count += 1
+
+    return overlap_count / len(generated_ngrams)
+
+
+def count_score(model, tokens, gen, train):
+    perplexity = calculate_perplexity(model, tokens)
+    overlap_2 = calculate_self_overlap(gen, train, 2)
+    overlap_3 = calculate_self_overlap(gen, train, 3)
+    avg_overlap = (overlap_2 + overlap_3) / 2
+
+    ppl_term = 1.0 / (1.0 + perplexity / 2.0)
+
+    overlap_diff = abs(avg_overlap - 0.3)
+    overlap_term = 1.0 / (1.0 + overlap_diff * 2.0)
+
+    return ppl_term * overlap_term

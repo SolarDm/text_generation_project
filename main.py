@@ -1,6 +1,6 @@
 from bpe import BPE
-from markov_chain import MarkovChain, exponential_kernel, triangular_kernel, gaussian_kernel, cosine_kernel
-from utils import load_corpus, preprocess_text
+from markov_chain import *
+from utils import *
 
 
 def main():
@@ -18,20 +18,26 @@ def main():
     tokens = bpe.encode(text)
 
     orders = [1, 2, 3, 4, 5, 6, 7]
-    generated_texts = []
 
     for n in orders:
-        for sm in ['interpolation', 'k-add', 'none']:
+        for sm in ['k-add', 'none', 'interpolation']:
             print(f"\nОбучение {n}-граммной модели со сглаживаеим {sm}...")
             model = MarkovChain(n=n, smoothing=sm, alpha=0.00001, kernel=exponential_kernel)
             model.train(tokens)
 
+            # print(f'Качество модели: {calculate_perplexity(model, tokens)}')
+
             text = model.generate(max_length=500)
-            generated_texts.append(text)
 
             print(f"Сгенерированный текст (n={n}):")
             text = [int(i) for i in text]
-            print(bpe.decode(text))
+            gen = bpe.decode(text)
+            print(gen)
+
+            # print(f'Схожесть с изначальным тектом: {calculate_self_overlap(bpe.decode(text).split(), train_tokens, 2)}')
+
+            print(f'Score: {count_score(model, tokens, gen.split(), train_tokens)}')
+
             print()
 
 
