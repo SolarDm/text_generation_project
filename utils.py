@@ -77,6 +77,8 @@ def count_score(model, tokens, gen, train, best_overlap_percent=0.2):
 
     if avg_overlap < best_overlap_percent:
         overlap_den = (best_overlap_percent - avg_overlap) * 20
+    elif avg_overlap == best_overlap_percent:
+        overlap_den = 1.0
     else:
         overlap_den = (avg_overlap - best_overlap_percent) * 5
 
