@@ -47,7 +47,7 @@ def calculate_perplexity(model: MarkovChain, test_tokens: List[str]) -> float:
     return perplexity
 
 
-def calculate_self_overlap(generated_tokens: List[str], train_tokens: List[str], ngram_size: int = 5) -> float:
+def calculate_overlap(generated_tokens: List[str], train_tokens: List[str], ngram_size: int = 5) -> float:
     train_ngrams = set()
     for i in range(len(train_tokens) - ngram_size + 1):
         train_ngrams.add(tuple(train_tokens[i:i + ngram_size]))
@@ -67,19 +67,49 @@ def calculate_self_overlap(generated_tokens: List[str], train_tokens: List[str],
     return overlap_count / len(generated_ngrams)
 
 
-def count_score(model, tokens, gen, train, best_overlap_percent=0.2):
+def count_score(
+        model,
+        tokens,
+        gen,
+        train,
+        test,
+        ppl_scale: float = 4.0,
+        best_overlap_train_percent: float = 0.3,
+        test_overlap_min: float = 0.18,
+        test_overlap_max: float = 0.22,
+        generalization_bonus: float = 1.2
+):
     perplexity = calculate_perplexity(model, tokens)
-    overlap_2 = calculate_self_overlap(gen, train, 2)
-    overlap_3 = calculate_self_overlap(gen, train, 3)
-    avg_overlap = (overlap_2 + overlap_3) / 2
 
-    ppl_term = min(1.0, 1.0 / (1.0 + perplexity / 3.0))
+    avg_train = (calculate_overlap(gen, train, 2) +
+                 calculate_overlap(gen, train, 3)) / 2
 
-    if avg_overlap < best_overlap_percent:
-        overlap_den = (best_overlap_percent - avg_overlap) * 20
+    avg_test = (calculate_overlap(gen, test, 2) +
+                calculate_overlap(gen, test, 3)) / 2
+
+    quality = math.exp(-perplexity / ppl_scale)
+
+    if avg_train < best_overlap_train_percent:
+        overlap_den = (best_overlap_train_percent - avg_train) * 20
     else:
-        overlap_den = (avg_overlap - best_overlap_percent) * 5
+        overlap_den = (avg_train - best_overlap_train_percent) * 5
 
-    overlap_term = min(1.0 / overlap_den, 1.0)
+    creativity = min(1.0 / overlap_den, 1.0)
 
-    return ppl_term * overlap_term
+    if avg_test < test_overlap_min:
+        generalization = avg_test / test_overlap_min
+    elif avg_test <= test_overlap_max:
+        generalization = 1.0
+    else:
+        generalization = max(0.0, 1.0 - (avg_test - test_overlap_max) / (1.0 - test_overlap_max))
+
+    score = quality * creativity * generalization
+
+    print(quality)
+    print(creativity)
+    print(generalization)
+
+    if avg_test > avg_train:
+        score *= generalization_bonus
+
+    return min(1.0, max(0.0, score))
