@@ -101,10 +101,6 @@ def count_score(
 
     score = quality * creativity * generalization
 
-    print(quality)
-    print(creativity)
-    print(generalization)
-
     if avg_test > avg_train:
         score *= generalization_bonus
 
