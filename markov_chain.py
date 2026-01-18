@@ -241,3 +241,7 @@ def cosine_kernel(distance: float, bandwidth: float = 1.0) -> float:
 
 def exponential_kernel(distance: float, bandwidth: float = 1.0) -> float:
     return math.exp(-abs(distance) / bandwidth) / (2 * bandwidth)
+
+
+def no_kernel(distance: float, bandwidth: float) -> float:
+    return np.nan

@@ -5,8 +5,8 @@ from utils import *
 def main():
     corpus = load_corpus('data/war_and_peace.txt')
     tokens = preprocess_text(corpus)
-    train_tokens = tokens[:int(len(tokens) * 0.8)]
-    test_tokens = tokens[int(len(tokens) * 0.8):]
+    train_tokens = tokens[:int(len(tokens) * 0.4)]
+    test_tokens = tokens[int(len(tokens) * 0.4):int(len(tokens) * 0.6)]
 
     print(f"Всего токенов: {len(tokens)}")
     print(f"Токенов для обучения: {len(tokens)}")
