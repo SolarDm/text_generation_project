@@ -21,7 +21,6 @@ class BPE:
         token_ids = [self.vocab[char] for char in tokens]
 
         for it in range(self.merges):
-            print(len(token_ids))
             pair_counts = Counter()
             for i in range(len(token_ids) - 1):
                 pair = (token_ids[i], token_ids[i + 1])
@@ -59,7 +58,7 @@ class BPE:
 
         print(f"Словарь: {len(self.vocab)} токенов, {len(self.merge_rules)} слияний")
 
-        print(max(len(self.id_to_token[i]) for i in token_ids))
+        print(f"Максимальная длина токена: {max(len(self.id_to_token[i]) for i in token_ids)}")
 
         return token_ids
 

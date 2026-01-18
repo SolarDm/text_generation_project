@@ -1,6 +1,7 @@
+import math
 import random
 from collections import defaultdict, Counter
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Callable
 import numpy as np
 
 
@@ -10,21 +11,24 @@ class MarkovChain:
             n: int = 2,
             smoothing: str = 'none',
             alpha: float = 1.0,
-            lambdas: Optional[List[float]] = None
+            kernel: Optional[Callable[[int, int], float]] = None,
+            kernel_bandwidth: float = 1.0
     ):
         self.training_tokens = None
         self.n = n
         self.smoothing = smoothing
         self.alpha = alpha
-        self.lambdas = lambdas
+        self.kernel = kernel
+        self.kernel_bandwidth = kernel_bandwidth
 
-        if smoothing == 'none':
+        if smoothing != 'k-add':
             self.alpha = 0.0
 
         self.model = defaultdict(Counter)
         self.start_contexts = []
         self.vocab = set()
         self.vocab_size = 0
+        self.lambdas = None
 
         self.lower_n_models = {} if smoothing == 'interpolation' else None
 
@@ -65,11 +69,27 @@ class MarkovChain:
 
             self.model[context][next_token] += 1
 
+    def _compute_kernel_weights(self) -> List[float]:
+        if self.kernel is None:
+            self.kernel = gaussian_kernel
+
+        weights = []
+        total_weight = 0.0
+
+        for k in range(self.n + 1):
+            distance = self.n - k
+            weight = self.kernel(distance, self.kernel_bandwidth)
+            weights.append(weight)
+            total_weight += weight
+
+        if total_weight > 0:
+            weights = [w / total_weight for w in weights]
+
+        return weights
+
     def _train_interpolation_models(self, tokens: List[str]):
         if self.lambdas is None:
-            self.lambdas = [0.5 ** (self.n - i + 1) for i in range(self.n + 1)]
-            total = sum(self.lambdas)
-            self.lambdas = [l / total for l in self.lambdas]
+            self.lambdas = self._compute_kernel_weights()
 
         self.lower_n_models = {}
 
@@ -108,7 +128,7 @@ class MarkovChain:
 
             for token in self.vocab:
                 if not (token in smoothed_probs):
-                    smoothed_probs[token] = (self.alpha) / total_smoothed
+                    smoothed_probs[token] = self.alpha / total_smoothed
 
             self.model[context] = smoothed_probs
 
@@ -135,16 +155,21 @@ class MarkovChain:
             if k == 0:
                 unigram_model = self.lower_n_models[0]
                 unigram_counter = unigram_model[()]
-                prob_k = unigram_counter.get(token, 0) / self.vocab_size
+                total_tokens = sum(unigram_counter.values())
+
+                if total_tokens > 0:
+                    prob_k = unigram_counter.get(token, 0) / total_tokens
+                else:
+                    prob_k = 0.0
 
             else:
-                if len(context) >= k - 1:
-                    sub_context = context[-(k - 1):] if k > 1 else ()
-                    model_k = self.lower_n_models[k]
+                if len(context) >= k:
+                    sub_context = context[-k:]
 
-                    if sub_context in model_k:
-                        counter = model_k[sub_context]
+                    if sub_context in self.lower_n_models[k]:
+                        counter = self.lower_n_models[k][sub_context]
                         total = sum(counter.values())
+
                         if total > 0:
                             prob_k = counter.get(token, 0) / total
                         else:
@@ -161,7 +186,6 @@ class MarkovChain:
     def generate(
             self,
             max_length: int = 100,
-            temperature: float = 1.0,
             seed: Optional[str] = None
     ) -> List[str]:
         if seed is not None:
@@ -175,7 +199,7 @@ class MarkovChain:
         for _ in range(max_length - len(context)):
             current_context = tuple(result[-self.n:]) if self.n > 0 else ()
 
-            next_token = self._sample_next_token(current_context, temperature)
+            next_token = self._sample_next_token(current_context)
 
             if next_token is None:
                 break
@@ -184,7 +208,7 @@ class MarkovChain:
 
         return result
 
-    def _sample_next_token(self, context: Tuple[str, ...], temperature: float) -> Optional[str]:
+    def _sample_next_token(self, context: Tuple[str, ...]) -> Optional[str]:
         candidates = []
         probabilities = []
 
@@ -198,8 +222,22 @@ class MarkovChain:
         if probabilities.sum() == 0:
             return random.choices(candidates, k=1)[0]
 
-        if temperature != 1.0:
-            probabilities = np.power(probabilities, 1.0 / temperature)
-            probabilities = probabilities / probabilities.sum()
-
         return random.choices(candidates, weights=probabilities, k=1)[0]
+
+
+def gaussian_kernel(distance: float, bandwidth: float = 1.0) -> float:
+    return math.exp(-0.5 * (distance / bandwidth) ** 2) / (bandwidth * math.sqrt(2 * math.pi))
+
+
+def triangular_kernel(distance: float, bandwidth: float = 1.0) -> float:
+    u = abs(distance / bandwidth)
+    return (1 - u) if u <= 1 else 0.0
+
+
+def cosine_kernel(distance: float, bandwidth: float = 1.0) -> float:
+    u = abs(distance / bandwidth)
+    return (math.pi / 4) * math.cos((math.pi / 2) * u) if u <= 1 else 0.0
+
+
+def exponential_kernel(distance: float, bandwidth: float = 1.0) -> float:
+    return math.exp(-abs(distance) / bandwidth) / (2 * bandwidth)

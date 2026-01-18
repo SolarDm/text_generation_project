@@ -1,5 +1,6 @@
 import re
 from typing import List
+import numpy as np
 
 def load_corpus(filepath: str) -> str:
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -10,6 +11,10 @@ def preprocess_text(text: str, lower_case: bool = True) -> List[str]:
         text = text.lower()
 
     text = re.sub(r'([.!?,;:])', r' \1 ', text)
+    text = re.sub(r'-{2,}', ' ', text)
+    text = re.sub(r'[iuv*\\()0123456789;?!":<>sh-]', ' ', text)
+    text = text.replace('ё', 'е')
+    text = text.replace('ъ', 'ь')
     tokens = text.split()
     
     return tokens
