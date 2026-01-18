@@ -52,10 +52,8 @@ class MarkovChain:
         first_context = tuple(tokens[:self.n])
         self.start_contexts.append(first_context)
 
-        sentence_ends = {'.', '!', '?', ';', ':', '\n'}
-
         for i in range(len(tokens) - self.n):
-            if tokens[i] in sentence_ends:
+            if random.randrange(10) == 5:
                 context = tuple(tokens[i + 1:i + 1 + self.n])
                 if len(context) == self.n:
                     self.start_contexts.append(context)
@@ -188,6 +186,7 @@ class MarkovChain:
             max_length: int = 100,
             seed: Optional[str] = None
     ) -> List[str]:
+        print(self.start_contexts)
         if seed is not None:
             random.seed(seed)
             np.random.seed(seed)
@@ -245,3 +244,4 @@ def exponential_kernel(distance: float, bandwidth: float = 1.0) -> float:
 
 def no_kernel(distance: float, bandwidth: float) -> float:
     return np.nan
+
