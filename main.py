@@ -2,7 +2,6 @@ from bpe import BPE
 from markov_chain import *
 from utils import *
 
-
 def main():
     corpus = load_corpus('data/war_and_peace.txt')
     tokens = preprocess_text(corpus)
@@ -20,9 +19,9 @@ def main():
     orders = [1, 2, 3, 4, 5, 6, 7]
 
     for n in orders:
-        for sm in ['k-add', 'none', 'interpolation']:
+        for sm in ['k-add', 'interpolation']:
             print(f"\nОбучение {n}-граммной модели со сглаживаеим {sm}...")
-            model = MarkovChain(n=n, smoothing=sm, alpha=0.00001, kernel=exponential_kernel)
+            model = MarkovChain(n=n, smoothing=sm, alpha=0.01, kernel=exponential_kernel)
             model.train(tokens)
 
             # print(f'Качество модели: {calculate_perplexity(model, tokens)}')
@@ -35,7 +34,6 @@ def main():
             print(gen)
 
             # print(f'Схожесть с изначальным тектом: {calculate_self_overlap(bpe.decode(text).split(), train_tokens, 2)}')
-
             print(f'Score: {count_score(model, tokens, gen.split(), train_tokens)}')
 
             print()

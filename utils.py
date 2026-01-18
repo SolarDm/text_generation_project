@@ -67,15 +67,19 @@ def calculate_self_overlap(generated_tokens: List[str], train_tokens: List[str],
     return overlap_count / len(generated_ngrams)
 
 
-def count_score(model, tokens, gen, train):
+def count_score(model, tokens, gen, train, best_overlap_percent=0.2):
     perplexity = calculate_perplexity(model, tokens)
     overlap_2 = calculate_self_overlap(gen, train, 2)
     overlap_3 = calculate_self_overlap(gen, train, 3)
     avg_overlap = (overlap_2 + overlap_3) / 2
 
-    ppl_term = 1.0 / (1.0 + perplexity / 2.0)
+    ppl_term = min(1.0, 1.0 / (1.0 + perplexity / 3.0))
 
-    overlap_diff = abs(avg_overlap - 0.3)
-    overlap_term = 1.0 / (1.0 + overlap_diff * 2.0)
+    if avg_overlap < best_overlap_percent:
+        overlap_den = (best_overlap_percent - avg_overlap) * 20
+    else:
+        overlap_den = (avg_overlap - best_overlap_percent) * 5
+
+    overlap_term = min(1.0 / overlap_den, 1.0)
 
     return ppl_term * overlap_term
