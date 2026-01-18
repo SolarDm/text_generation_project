@@ -5,11 +5,11 @@ from utils import *
 def main():
     corpus = load_corpus('data/war_and_peace.txt')
     tokens = preprocess_text(corpus)
-    train_tokens = tokens[:int(len(tokens) * 0.1)]
-    test_tokens = tokens[int(len(tokens) * 0.1):int(len(tokens) * 0.2)]
+    train_tokens = tokens[:int(len(tokens) * 0.8)]
+    test_tokens = tokens[int(len(tokens) * 0.8):]
 
     print(f"Всего токенов: {len(tokens)}")
-    print(f"Токенов для обучения: {len(train_tokens)}")
+    print(f"Токенов для обучения: {len(tokens)}")
 
     bpe = BPE(merges=10)
 
@@ -17,13 +17,16 @@ def main():
 
     tokens = bpe.encode(text)
 
+    train_tokens_enc = tokens[:int(len(tokens) * 0.7)]
+    test_tokens_enc = tokens[int(len(tokens) * 0.7):]
+
     orders = [1, 2, 3, 4, 5, 6, 7]
 
     for n in orders:
-        for sm in ['interpolation', 'k-add']:
+        for sm in ['interpolation']:
             print(f"\nОбучение {n}-граммной модели со сглаживаеим {sm}...")
             model = MarkovChain(n=n, smoothing=sm, alpha=0.01, kernel=exponential_kernel)
-            model.train(tokens)
+            model.train(train_tokens_enc)
 
             # print(f'Качество модели: {calculate_perplexity(model, tokens)}')
 
@@ -34,9 +37,7 @@ def main():
             gen = bpe.decode(text)
             print(gen)
 
-            # print(f'Схожесть с тестовым тектом: {(calculate_overlap(bpe.decode(text).split(), test_tokens, 2) + calculate_overlap(bpe.decode(text).split(), test_tokens, 3)) / 2}')
-            # print(f'Схожесть с тектом: {(calculate_overlap(bpe.decode(text).split(), train_tokens, 2) + calculate_overlap(bpe.decode(text).split(), train_tokens, 3)) / 2}')
-            print(f'Score: {count_score(model, tokens, gen.split(), train_tokens, test_tokens)}')
+            print(f'Score: {count_score(model, test_tokens_enc, gen.split(), train_tokens, test_tokens)}')
 
             print()
 

@@ -73,10 +73,10 @@ def count_score(
         gen,
         train,
         test,
-        ppl_scale: float = 4.0,
+        ppl_scale: float = 20.0,
         best_overlap_train_percent: float = 0.3,
-        overlap_train_width: float = 5,    # +- (1 / width)
-        test_overlap_min: float = 0.2,
+        overlap_train_width: float = 10,    # +- (1 / width)
+        test_overlap_min: float = 0.15,
         test_overlap_max: float = 0.4,
         generalization_bonus: float = 1.2
 ):
