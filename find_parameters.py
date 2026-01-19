@@ -25,13 +25,12 @@ kernels = {
 def objective(trial):
     global text_train, kernels
 
-    n = trial.suggest_int("n", 1, 7)
+    n = trial.suggest_int("n", 1, 12)
     num_merges = trial.suggest_int("num_merges", 1, 100)
-    smoothing = trial.suggest_categorical("smoothing", ["none", "add-k", "interpolation"])
+    smoothing = trial.suggest_categorical("smoothing", ["none", "k-add", "interpolation"])
     alpha = 0.0
-    if smoothing == "add-k":
-        deg = trial.suggest_float("alpha_deg", 1, 10)
-        alpha = 10 ** (-deg)
+    if smoothing == "k-add":
+        alpha = trial.suggest_float("alpha", 1e-8, 1.0, log=True)
 
     kernel = "no"
     bandwidth = 1.0
@@ -60,12 +59,12 @@ def objective(trial):
     gen = bpe.decode(text_int)
     score = count_score(model, test_tokens_enc, gen.split(), train_tokens, test_tokens)
 
-    return score
+    return score if score > 1e-5 else -(num_merges / 100.0 + n / 12.0)
 
 
 study = optuna.create_study(direction="maximize")
 
-study.optimize(objective, n_trials=50)
+study.optimize(objective, n_trials=200)
 
 print("Лучшие параметры:", study.best_params)
 print("Лучшее значение метрики:", study.best_value)

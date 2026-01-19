@@ -11,7 +11,7 @@ def main():
     print(f"Всего токенов: {len(tokens)}")
     print(f"Токенов для обучения: {len(tokens)}")
 
-    bpe = BPE(merges=10)
+    bpe = BPE(merges=3)
 
     text = " ".join(train_tokens)
 
@@ -20,12 +20,12 @@ def main():
     train_tokens_enc = tokens[:int(len(tokens) * 0.7)]
     test_tokens_enc = tokens[int(len(tokens) * 0.7):]
 
-    orders = [1, 2, 3, 4, 5, 6, 7]
+    orders = [6]
 
     for n in orders:
         for sm in ['interpolation']:
             print(f"\nОбучение {n}-граммной модели со сглаживаеим {sm}...")
-            model = MarkovChain(n=n, smoothing=sm, alpha=0.01, kernel=exponential_kernel)
+            model = MarkovChain(n=n, smoothing=sm, alpha=0.01, kernel=exponential_kernel, kernel_bandwidth=1.4074337300464117)
             model.train(train_tokens_enc)
 
             # print(f'Качество модели: {calculate_perplexity(model, tokens)}')

@@ -56,10 +56,6 @@ class BPE:
                     i += 1
             token_ids = new_token_ids
 
-        print(f"Словарь: {len(self.vocab)} токенов, {len(self.merge_rules)} слияний")
-
-        print(f"Максимальная длина токена: {max(len(self.id_to_token[i]) for i in token_ids)}")
-
         return token_ids
 
     def decode(self, token_ids: List[int]) -> str:

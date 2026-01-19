@@ -186,7 +186,6 @@ class MarkovChain:
             max_length: int = 100,
             seed: Optional[str] = None
     ) -> List[str]:
-        print(self.start_contexts)
         if seed is not None:
             random.seed(seed)
             np.random.seed(seed)
