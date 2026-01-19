@@ -15,17 +15,12 @@ def preprocess_text(text: str, lower_case: bool = True) -> List[str]:
 
     text = re.sub(r'([.!?,;:])', r' \1 ', text)
     text = re.sub(r'-{2,}', ' ', text)
-    text = re.sub(r'[iusv*\\()0123456789;?!":<>,h-]', ' ', text)
+    text = re.sub(r'[qwertyuiopasdfghjklzxcvbnm\'^*\\()0123456789;?!":<>,-]', ' ', text)
     text = text.replace('ё', 'е')
     text = text.replace('ъ', 'ь')
     tokens = text.split()
     
     return tokens
-
-
-def split_train_test(tokens: List[str], test_size: float = 0.1) -> tuple:
-    split_idx = int(len(tokens) * (1 - test_size))
-    return tokens[:split_idx], tokens[split_idx:]
 
 
 def calculate_perplexity(model: MarkovChain, test_tokens: List[str]) -> float:
