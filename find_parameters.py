@@ -25,6 +25,8 @@ kernels = {
 def objective(trial):
     global text_train, kernels
 
+    code_whitespaces = trial.suggest_categorical("code_whitespaces", [True, False])
+
     n = trial.suggest_int("n", 1, 12)
     num_merges = trial.suggest_int("num_merges", 1, 100)
     smoothing = trial.suggest_categorical("smoothing", ["none", "k-add", "interpolation"])
@@ -44,7 +46,7 @@ def objective(trial):
             log=True
         )
 
-    bpe = BPE(merges=num_merges)
+    bpe = BPE(merges=num_merges, code_whitespaces=code_whitespaces)
 
     tokens = bpe.encode(text_train)
 
