@@ -1,2 +1,10 @@
-.idea
+pyvenv.cfg
+lib64
+
+.idea/
 __pycache__/
+.vscode/
+bin/
+include/
+lib/
+share/
